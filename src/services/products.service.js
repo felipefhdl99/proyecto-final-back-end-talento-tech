@@ -1,4 +1,4 @@
-import { getAllProducts, getProductById, addProduct, deleteProduct, updateProduct } from '../models/products.model.js';
+import { getAllProducts, getProductId, getProductById, addProduct, deleteProduct } from '../models/products.model.js';
 
 // Este archivo contiene la lógica de negocio, validaciones y transformación de datos para productos
 
@@ -16,8 +16,15 @@ export const fetchAllProductsService = async () => {
  * @returns {Promise<Object>} Producto encontrado
  * @throws {Error} Si el producto no existe
  */
-export const fetchProductByIdService = async (id) => {
-    const product = await getProductById(id);
+export const fetchProductByIdService = async (productId) => {
+    const firestoreId = await getProductId(productId);
+    console.log('Product ID found:', firestoreId);
+    if (!firestoreId) {
+        throw new Error('Product not found');
+    }
+    // Llama al modelo para obtener el producto por ID
+    const product = await getProductById(firestoreId);
+    console.log('Product found:', product);
     if (!product) {
         throw new Error('Product not found');
     }
@@ -35,7 +42,8 @@ export const createProductService = async (productData) => {
         throw new Error('Product must have an id');
     }
     // Verifica si ya existe un producto con ese ID
-    const existing = await getProductById(productData.id);
+    const existing = await getProductId(productData.id);
+    console.log('Existing product ID:', existing);
     if (existing) {
         throw new Error('Product with this ID already exists');
     }
@@ -48,17 +56,22 @@ export const createProductService = async (productData) => {
  * @returns {Promise<Object>} Producto eliminado
  */
 export const deleteProductService = async (id) => {
+    const firestoreId = await getProductId(id);
+    if (!firestoreId) {
+        throw new Error('Product not found');
+    }
     // Opcionalmente verifica si el producto existe primero
-    return await deleteProduct(id);
+    await deleteProduct(firestoreId)
+    return firestoreId;
 };
 
-/**
- * Servicio para actualizar un producto existente
- * @param {string} id - ID del producto
- * @param {Object} productData - Datos a actualizar
- * @returns {Promise<Object>} Producto actualizado
- */
-export const updateProductService = async (id, productData) => {
-    // Opcionalmente verifica si el producto existe primero
-    return await updateProduct(id, productData);
-};
+// /**
+//  * Servicio para actualizar un producto existente
+//  * @param {string} id - ID del producto
+//  * @param {Object} productData - Datos a actualizar
+//  * @returns {Promise<Object>} Producto actualizado
+//  */
+// export const updateProductService = async (id, productData) => {
+//     // Opcionalmente verifica si el producto existe primero
+//     return await updateProduct(id, productData);
+// };

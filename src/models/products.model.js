@@ -1,5 +1,5 @@
 // Este archivo contiene las funciones del modelo de productos, que interactúan con la base de datos Firestore.
-import db from '../data/data.js'
+import db from '../data/products.data.js'
 import {
     collection,
     getDocs,
@@ -8,7 +8,10 @@ import {
     deleteDoc,
     updateDoc,
     doc,
-    setDoc
+    setDoc,
+    where,
+    query,
+    DocumentReference
 } from 'firebase/firestore';
 
 // Referencia a la colección de productos en Firestore
@@ -26,29 +29,57 @@ export const getAllProducts = async () => {
     }));
 };
 
+export const getProductId = async (productId) => {
+    try {
+        const q = query(productsCollection, where('id', '==', productId));
+        console.log('Query:', q);
+        const querySnapshot = await getDocs(q);
+        console.log('Query Snapshot:', querySnapshot);
+        if (querySnapshot.empty) {
+            return null; // No se encontró el producto
+        }
+        // Retorna el ID del documento en Firestore
+        return querySnapshot.docs[0].id;
+    } catch (error) {
+        console.error('Error getting Firestore doc ID for product ID:', error);
+        return null;
+    }
+};
+
 /**
- * Obtiene un producto por su ID
+ * Obtiene un producto por su ID de firestore
  * @param {string} id - ID del producto
  * @returns {Promise<Object|null>} Producto encontrado o null si no existe
  */
-export const getProductById = async (id) => {
-    const productDoc = doc(productsCollection, id);
-    const productSnapshot = await getDoc(productDoc);
-    if (productSnapshot.exists()) {
-        return { id: productSnapshot.id, ...productSnapshot.data() };
-    } else {
-        return null; // No se lanza error, solo retorna null
+export const getProductById = async (firestoreId) => {
+    try {
+        const docRef = doc(productsCollection, firestoreId);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            return null; // No se encontró el producto
+        }
+
+        return { firestoreId: docSnap.id, ...docSnap.data() }; // Incluye el doc ID en el resultado
+    } catch (error) {
+        console.error('Error getting product by Firestore ID:', error);
+        return null;
     }
 };
 
 /**
  * Agrega un nuevo producto a la base de datos
- * @param {Object} product - Datos del producto
+ * @param {Object} productData - Datos del producto
  * @returns {Promise<Object>} Producto agregado
  */
-export const addProduct = async (product) => {
-    await setDoc(doc(productsCollection, product.id), product);
-    return { id: product.id, ...product };
+export const addProduct = async (productData) => {
+    // Retorna el producto con su ID
+    try {
+        const docRef = await addDoc(productsCollection, productData);
+        return { firestoreId: docRef.id, ...productData };
+    } catch (error) {
+        console.error('Error adding product:', error);
+    }
 };
 
 /**
@@ -61,13 +92,13 @@ export const deleteProduct = async (id) => {
     return { id };
 };
 
-/**
- * Actualiza un producto existente
- * @param {string} id - ID del producto
- * @param {Object} productData - Datos a actualizar
- * @returns {Promise<Object>} Producto actualizado
- */
-export const updateProduct = async (id, productData) => {
-    await updateDoc(doc(productsCollection, id), productData);
-    return { id, ...productData };
-};
+// /**
+//  * Actualiza un producto existente
+//  * @param {string} id - ID del producto
+//  * @param {Object} productData - Datos a actualizar
+//  * @returns {Promise<Object>} Producto actualizado
+//  */
+// export const updateProduct = async (id, productData) => {
+//     await updateDoc(doc(productsCollection, id), productData);
+//     return { id, ...productData };
+// };
